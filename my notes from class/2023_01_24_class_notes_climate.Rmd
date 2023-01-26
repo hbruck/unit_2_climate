@@ -1,0 +1,98 @@
+Heather Bruck 
+2023-01-2024
+MSCI 599- Unit 2, Measuring Ice Sheets Class Notes 
+
+```{r, echo=FALSE, message=FALSE} 
+library(tidyverse, plyr)
+```
+
+Reading the data from local files:
+
+- this data is taken from NASA website, the files were loaded into 'data' file but can be accessed online too  
+- data is of antarctic and greenland ice mass loss  
+- ant_ice_loss = atlantic ice mass loss  
+- grn_ice_loss = greenland ice mass loss  
+
+```{r}
+ant_ice_loss <- read.table("data/antarctica_mass_200204_202209.txt",
+           skip = 31, 
+           sep = "", 
+           header = F, 
+           col.names = c("decimal_date", "mass_Gt", "sigma_GT")) 
+
+grn_ice_loss <- read.table("data/greenland_mass_200204_202209.txt", 
+            skip = 31, 
+            sep = "", 
+            header = F, 
+            col.names = c("decimal_date", "mass_Gt", "sigma_GT")) 
+```
+
+ALWAYS check your data as you go, make sure that R didn't change it in ways you don't want  
+
+- head() shows the first 6 columns of data  
+- tail() shows the last 6 columns of data  
+- summary() shows different things depending on the type of data  
+
+to create a plot of the data using basic R... 
+```{r} 
+plot(mass_Gt ~ decimal_date, data = ant_ice_loss, ylab = "Antarctica Mass Loss (Gt)")
+
+```
+
+again, always check the data as you progress 
+```{r} 
+view(ant_ice_loss)  
+head(grn_ice_loss)  
+tail(grn_ice_loss)  
+summary(grn_ice_loss) 
+```
+
+Plotting the data we have created:  
+```{r} 
+plot(mass_Gt ~ decimal_date, data = grn_ice_loss, ylab = "Greenland Mass Loss (Gt)") 
+```
+
+using mass_Gt ~ decimal_date means y (mass_Gt) as a function of x (decimal_date)  
+
+to expand the plot to show all of Greenland's data:  
+```{r}
+plot(mass_Gt ~ decimal_date, data = ant_ice_loss, 
+     ylab = "Antarctica Mass Loss (Gt)", 
+     type = 'l', 
+     ylim = range(grn_ice_loss$mass_Gt)) +
+  lines(mass_Gt ~ decimal_date, data = grn_ice_loss, 
+        type = 'l', 
+        col = 'red')
+```
+
+for this code^, you can also use min(grn_ice_loss$mass_Gt) or max() instead of range  
+
+From the website and from our scatter plot, we know that there was a gap between NASA Grace satellite missions from 2017-06-10 to 2018-06-14. Rather than have our plot function draw a line straight across the gap (which looks like we collected data when we didn't), we can break up the line into segments. I'm going to force R's plot() functions to note the gap in the data by inserting an `NA` into the data.frame at the start of 2018. Then let's add in grey shaded polygons behind it to show the uncertainty
+
+```{r}
+#Create data.frame with an NA between the GRACE missions. Column names must match so it will merge with ant and grn data
+data_break = data.frame(decimal_date=2018.0, mass_Gt=NA, sigma_Gt=NA)
+data_break
+
+#Add NA data point to the Antarctica ice trends data frame
+ant_ice_loss_with_NA <- rbind(ant_ice_loss, data_break) 
+tail(ant_ice_loss_with_NA) # Our NA value in 2018 is now the last row of our data frame
+order(ant_ice_loss_with_NA$decimal_date) # Use order() to list the indices of the data after its sorted from smallest to biggest
+ant_ice_loss_with_NA = ant_ice_loss_with_NA[order(ant_ice_loss_with_NA$decimal_date),] # Reorder the data frame, sorting by date
+
+#Repeat with Greenland data.frame
+grn_ice_loss_with_NA = rbind(grn_ice_loss, data_break) # Merge grn_ice_loss data frame with our NA point
+grn_ice_loss_with_NA = grn_ice_loss_with_NA[order(grn_ice_loss_with_NA$decimal_date),]
+
+plot(mass_Gt ~ decimal_date, data=ant_ice_loss_with_NA, ylab="Antarctica Mass Loss (Gt)", type='l', ylim=range(grn_ice_loss_with_NA$mass_Gt, na.rm=TRUE)) +
+lines(mass_Gt ~ decimal_date, data=grn_ice_loss_with_NA, type='l', col='red') 
+```
+
+NASA provided sigma, or one standard deviation, uncertainty data, which represents 68% of uncertainty. (Note in the header, they call it "1-sigma", but this doesn't mean "one minus the standard deviation", it means "one standard deviation"). However, in science, sometimes we show errors as "2-sigma", where 2 X sigma represents 95% uncertainty. We can plot 95% confidence intervals around the data by adding and subtracting 2*sigma from the mass loss estimates
+
+```{r}
+head(ant_ice_loss_with_NA)
+plot(mass_Gt ~ decimal_date, data=ant_ice_loss_with_NA, ylab="Antarctica Mass Loss (Gt)", xlab="Year", type='l') +
+lines((mass_Gt+2*sigma_Gt) ~ decimal_date, data=ant_ice_loss_with_NA, type='l', lty='dashed') +
+lines((mass_Gt-2*sigma_Gt) ~ decimal_date, data=ant_ice_loss_with_NA, type='l', lty='dashed') 
+```
