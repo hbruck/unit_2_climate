@@ -1,0 +1,10 @@
+---
+title: "Class Notes 2023_01_31"
+author: Heather Bruck 
+output: html_document
+---
+
+### Unit 2: Climate
+### Lesson 4: Examining global atmospheric CO2 trends
+#### Skills: Reading .txt files, plotting, saving figures, conditional statements, subsetting
+
